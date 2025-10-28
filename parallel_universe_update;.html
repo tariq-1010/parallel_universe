@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en" ng-app="SolarApp">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>195 Spinning Earth Globes — Three.js</title>
+
+  <!-- jQuery + Angular + Three.js -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+crossorigin="ID#32304-2711993-3">
+</script>
+
+  <style>
+    html, body { margin: 0; height: 100%; width: 100%; overflow: hidden; background: radial-gradient(circle at 30% 30%, #eaf1ff, #c9dbff); }
+    canvas { display: block; }
+
+    .controls {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(255,255,255,0.9);
+      padding: 10px 12px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      font-family: system-ui, sans-serif;
+      font-size: 14px;
+      color: #123;
+    }
+    .controls label { display:block; margin-bottom:6px; font-weight:500; }
+  </style>
+</head>
+<body ng-controller="MainCtrl as vm">
+  <div class="controls">
+    <label>🌍 Total Globes: <strong>195</strong></label>
+    <label>🌐 Realistic Earth Spin Active</label>
+  </div>
+
+  <script>
+    angular.module('SolarApp', []).controller('MainCtrl', [function() { return this; }]);
+
+    $(function(){
+      // Scene setup
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // Lighting
+      const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+      scene.add(ambient);
+      const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+      directional.position.set(5, 3, 5);
+      scene.add(directional);
+
+      // Texture
+      const loader = new THREE.TextureLoader();
+      const earthTexture = loader.load("https://upload.wikimedia.org/wikipedia/commons/6/6f/Earth_Eastern_Hemisphere.jpg");
+
+      // Create 195 Earths in circular pattern
+      const globes = [];
+      const totalGlobes = 195;
+      const radius = 35;
+      const earthRadius = 1.2;
+
+      for (let i = 0; i < totalGlobes; i++) {
+        const geometry = new THREE.SphereGeometry(earthRadius, 32, 32);
+        const material = new THREE.MeshPhongMaterial({ map: earthTexture });
+        const mesh = new THREE.Mesh(geometry, material);
+
+        // distribute around a large circle
+        const angle = (i / totalGlobes) * Math.PI * 2;
+        mesh.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, (Math.random() - 0.5) * 10);
+        scene.add(mesh);
+        globes.push(mesh);
+      }
+
+      camera.position.z = 80;
+
+      // Spin animation (realistic slow rotation)
+      function animate() {
+        requestAnimationFrame(animate);
+        globes.forEach((earth, idx) => {
+          // rotation speed close to actual Earth (~360° per 24h → we simulate gently)
+          earth.rotation.y += 0.00072; // roughly 1 rotation per minute visually
+        });
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      // Handle window resize
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    });
+  </script>
+</body>
+</html>
