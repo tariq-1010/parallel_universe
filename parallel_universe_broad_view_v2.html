@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en" ng-app="BigCircleApp">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Full Page Multi-Orbit Cosmic Earth Bubbles</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+  <style>
+    html, body {
+      width: 100%; height: 100%;
+      margin: 0; padding: 0;
+      background: radial-gradient(ellipse at center, #000010, #000000 80%);
+      overflow: hidden; position: relative;
+    }
+
+    .stars { position:absolute; inset:0; background: transparent url('https://www.transparenttextures.com/patterns/stardust.png') repeat; animation: starTwinkle 200s linear infinite; opacity:0.6; z-index:0; }
+    .galaxy-glow { position:absolute; inset:0; background: radial-gradient(circle at 30% 70%, rgba(0,80,255,0.2), transparent 70%), radial-gradient(circle at 70% 30%, rgba(255,0,150,0.15), transparent 70%); filter: blur(80px); animation: galaxyDrift 120s ease-in-out infinite alternate, nebulaWave 30s ease-in-out infinite; z-index:0; }
+
+    .orbit-container { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+    .orbit-ring { position:absolute; border-radius:50%; border:2px solid rgba(0,200,255,0.3); box-shadow:0 0 40px rgba(0,200,255,0.4); display:flex; align-items:center; justify-content:center; }
+    .orbit-bubble { position:absolute; width:40px; height:40px; border-radius:50%; background-size:cover; background-position:center; box-shadow:0 0 15px rgba(0,150,255,0.5); opacity:0.9; }
+
+    .circle { border-radius:50%; overflow:hidden; position:relative; display:flex; align-items:center; justify-content:center; width:500px; height:500px; border:4px solid rgba(255,255,255,0.2); background:radial-gradient(circle at center, #003366, #000); box-shadow:0 0 50px rgba(0,0,0,0.5); animation: rotateCircle 40s linear infinite, pulse 10s ease-in-out infinite; z-index:2; }
+    .bubble-layer{ position:absolute; inset:0; pointer-events:none; }
+    .bubble{ position:absolute; border-radius:50%; background-size:cover; background-position:center; opacity:0.9; animation: drift 10s infinite ease-in-out, spin 12s linear infinite; }
+    .central-pulse { position:absolute; width:100px; height:100px; border-radius:50%; background: radial-gradient(circle, #00f, #ff0, #fff, #00f); filter: blur(40px); animation: pulseCore 6s ease-in-out infinite; z-index:3; pointer-events:none; }
+
+    @keyframes pulseCore { 0% { transform: scale(0.8); opacity:0.5; background: radial-gradient(circle, #00f, #8f00ff, #fff, #00f); } 50% { transform: scale(1.2); opacity:1; background: radial-gradient(circle, #00f, #ff00ff, #fff, #00f); } 100% { transform: scale(0.8); opacity:0.5; background: radial-gradient(circle, #00f, #8f00ff, #fff, #00f); } }
+
+    @keyframes drift { 0%{transform:translate(0,0)scale(1);}25%{transform:translate(-5px,3px)scale(1.05);}50%{transform:translate(5px,-5px)scale(1);}75%{transform:translate(-3px,5px)scale(0.98);}100%{transform:translate(0,0)scale(1);} }
+    @keyframes spin { 0%{background-position:0% center;}100%{background-position:100% center;} }
+    @keyframes rotateCircle { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
+    @keyframes pulse { 0%,100%{transform:scale(1);box-shadow:0 0 50px rgba(0,150,255,0.4);}50%{transform:scale(1.03);box-shadow:0 0 80px rgba(0,200,255,0.7);} }
+    @keyframes starTwinkle { from{background-position:0 0;} to{background-position:10000px 10000px;} }
+    @keyframes galaxyDrift { 0%{transform:translate(0,0)scale(1);}50%{transform:translate(10px,-10px)scale(1.1);}100%{transform:translate(-10px,10px)scale(1);} }
+    @keyframes orbitClockwise { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
+    @keyframes nebulaWave { 0%,100%{filter:blur(80px) hue-rotate(0deg);}50%{filter:blur(85px) hue-rotate(45deg);} }
+  </style>
+</head>
+<body ng-controller="MainCtrl">
+  <div class="stars"></div>
+  <div class="galaxy-glow"></div>
+
+  <div class="orbit-container" id="orbitContainer">
+    <div class="circle" id="bigCircle" ng-style="circleStyle()">
+      <div class="central-pulse"></div>
+      <div class="bubble-layer" id="bubbleLayer"></div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var app = angular.module('BigCircleApp', []);
+      app.controller('MainCtrl', ['$scope', function($scope){
+        $scope.size = 500;
+        $scope.circleStyle = function(){
+          return { width:$scope.size+'px', height:$scope.size+'px', border:'4px solid rgba(255,255,255,0.2)', background:'radial-gradient(circle at center, #003366, #000)' };
+        };
+
+        function regenerateBubbles(){
+          var $layer = $('#bubbleLayer'); $layer.empty();
+          var diameter = $scope.size, radius = diameter/2, placed=[], bubbleCount = 120, bubbleMin=10, bubbleMax=36;
+          var earthFront='https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg';
+          var earthBack='https://upload.wikimedia.org/wikipedia/commons/2/2c/Whole_world_-_land_and_oceans_12000.jpg';
+          var i=0, attempts=0;
+          while(i<bubbleCount && attempts<bubbleCount*40){ attempts++;
+            var r=Math.random()*(bubbleMax-bubbleMin)+bubbleMin;
+            var cx=Math.random()*(diameter-2*r)+r, cy=Math.random()*(diameter-2*r)+r;
+            if(Math.sqrt((cx-radius)**2 + (cy-radius)**2)+r>radius) continue;
+            var overlap=false;
+            for(var j=0;j<placed.length;j++){ var p=placed[j]; if(Math.sqrt((p.cx-cx)**2+(p.cy-cy)**2)<(p.r+r)*0.95){overlap=true; break;} }
+            if(overlap) continue;
+            placed.push({cx:cx,cy:cy,r:r});
+            var img=(i%2==0)?earthFront:earthBack;
+            var duration=10+Math.random()*10;
+            var $b=$('<div class="bubble"></div>');
+            $b.css({ left:(cx-r)+'px', top:(cy-r)+'px', width:(2*r)+'px', height:(2*r)+'px', backgroundImage:'url('+img+')', animationDuration: duration+'s,'+(duration*1.2)+'s' });
+            $layer.append($b); i++;
+          }
+        }
+
+        function createOrbitBubbles(radius, container){
+          var $container = $(container); var count=28, center=$container.width()/2;
+          var earthFront='https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg';
+          var earthBack='https://upload.wikimedia.org/wikipedia/commons/2/2c/Whole_world_-_land_and_oceans_12000.jpg';
+          for(let i=0;i<count;i++){
+            var angle=(2*Math.PI/count)*i;
+            var x=center+radius*Math.cos(angle)-20;
+            var y=center+radius*Math.sin(angle)-20;
+            var img=(i%2==0)?earthFront:earthBack;
+            var $b=$('<div class="orbit-bubble"></div>');
+            $b.css({left:x+'px', top:y+'px', backgroundImage:'url('+img+')'});
+            $container.append($b);
+          }
+        }
+
+        $(function(){
+          regenerateBubbles();
+          var container = $('#orbitContainer');
+          var radii=[340,400,460,520,580,640,700];
+          var speeds=[60,90,75,120,100,140,80];
+          radii.forEach((r,index)=>{
+            var $ring=$('<div class="orbit-ring"></div>');
+            $ring.css({width:r*2+'px', height:r*2+'px', animation:'orbitClockwise '+speeds[index]+'s linear infinite'});
+            container.append($ring);
+            createOrbitBubbles(r,$ring);
+            
+            // fill each orbit ring with inner earth bubbles
+            var $innerLayer=$('<div class="bubble-layer"></div>');
+            $ring.append($innerLayer);
+            for(let j=0;j<60;j++){
+              var angle=Math.random()*2*Math.PI;
+              var rad=Math.random()*(r-20);
+              var x=r+rad*Math.cos(angle)-10;
+              var y=r+rad*Math.sin(angle)-10;
+              var img=(j%2==0)?'https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg':'https://upload.wikimedia.org/wikipedia/commons/2/2c/Whole_world_-_land_and_oceans_12000.jpg';
+              var $b=$('<div class="bubble"></div>');
+              $b.css({left:x+'px', top:y+'px', width:'20px', height:'20px', backgroundImage:'url('+img+')'});
+              $innerLayer.append($b);
+            }
+          });
+        });
+      }]);
+    })();
+  </script>
+</body>
+</html>
